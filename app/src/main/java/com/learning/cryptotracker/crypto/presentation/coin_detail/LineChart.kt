@@ -1,5 +1,6 @@
 package com.learning.cryptotracker.crypto.presentation.coin_detail
 
+import android.provider.ContactsContract.Data
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,7 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.draw
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
@@ -125,7 +129,11 @@ fun LineChart(
 
         )
 
-        drawRect(color = Color.Green.copy(alpha = 0.3f), topLeft = viewPort.topLeft, size = viewPort.size)
+        drawRect(
+            color = Color.Green.copy(alpha = 0.3f),
+            topLeft = viewPort.topLeft,
+            size = viewPort.size
+        )
 
         xLabelWidth = maxXLabelWidth + xAxisLabelSpacingPx
         xLabelTextLayoutResults.forEachIndexed { index, textLayoutResult ->
@@ -140,24 +148,33 @@ fun LineChart(
             )
             if (showHelperLines) {
                 drawLine(
-                    color = if(index == selectedDataPointIndex) style.selectedColor else style.unselectedColor,
-                    start = Offset(x = x + textLayoutResult.size.width/2f, y = viewPortTopY),
-                    end = Offset(x = x + textLayoutResult.size.width/2f, y = viewPortBottomY),
-                    strokeWidth = if(index == selectedDataPointIndex) style.helperLinesThicknessPx * 1.8f else style.helperLinesThicknessPx
+                    color = if (index == selectedDataPointIndex) style.selectedColor else style.unselectedColor,
+                    start = Offset(x = x + textLayoutResult.size.width / 2f, y = viewPortTopY),
+                    end = Offset(x = x + textLayoutResult.size.width / 2f, y = viewPortBottomY),
+                    strokeWidth = if (index == selectedDataPointIndex) style.helperLinesThicknessPx * 1.8f else style.helperLinesThicknessPx
                 )
             }
             if (index == selectedDataPointIndex) {
                 val valueLabel = ValueLabel(value = visibleDataPoints[index].y, unit = unit)
-                val valueResult = measurer.measure(text = valueLabel.formatted(), style = textStyle.copy(color = style.selectedColor), maxLines = 1)
-                val textPositionX = if(selectedDataPointIndex == visibleDataPointIndices.last){
+                val valueResult = measurer.measure(
+                    text = valueLabel.formatted(),
+                    style = textStyle.copy(color = style.selectedColor),
+                    maxLines = 1
+                )
+                val textPositionX = if (selectedDataPointIndex == visibleDataPointIndices.last) {
                     x - textLayoutResult.size.width
-                }else{
-                    x - textLayoutResult.size.width/2f
-                }  + textLayoutResult.size.width/2f
-                val isTextInVisibleRange = (size.width - textPositionX).roundToInt() in 0..size.width.roundToInt()
-                if(isTextInVisibleRange){
+                } else {
+                    x - textLayoutResult.size.width / 2f
+                } + textLayoutResult.size.width / 2f
+                val isTextInVisibleRange =
+                    (size.width - textPositionX).roundToInt() in 0..size.width.roundToInt()
+                if (isTextInVisibleRange) {
                     drawText(
-                        textLayoutResult = valueResult, topLeft = Offset(x = textPositionX,y = viewPortTopY - valueResult.size.height - 10f)
+                        textLayoutResult = valueResult,
+                        topLeft = Offset(
+                            x = textPositionX,
+                            y = viewPortTopY - valueResult.size.height - 10f
+                        )
                     )
                 }
             }
@@ -183,6 +200,62 @@ fun LineChart(
                     end = Offset(x = viewPortRightX, y = y + textLayoutResult.size.height / 2),
                     strokeWidth = style.helperLinesThicknessPx
                 )
+            }
+        }
+
+        drawPoints = visibleDataPointIndices.map {
+            val x =
+                viewPortLeftX + xLabelWidth * (it - visibleDataPointIndices.first) + xLabelWidth / 2
+            val ratioY = (dataPoints[it].y - minYValue) / (maxYValue - minYValue)
+            val y = viewPortTopY + viewPortHeightPx * ratioY
+            DataPoint(x = x, y = y, xLabel = dataPoints[it].xLabel)
+        }
+
+        // drawing using beizcurve
+        val controlPoint1 = mutableListOf<DataPoint>()
+        val controlPoint2 = mutableListOf<DataPoint>()
+        for (i in 1 until drawPoints.size) {
+            val p0 = drawPoints[i - 1]
+            val p1 = drawPoints[i]
+            val x = (p1.x + p0.x) / 2f
+            val y1 = p0.y
+            val y2 = p1.y
+            controlPoint1.add(DataPoint(x, y1, ""))
+            controlPoint2.add(DataPoint(x, y2, ""))
+        }
+
+        val linePath = Path().apply {
+            if (drawPoints.isNotEmpty()) {
+                moveTo(drawPoints.first().x, drawPoints.first().y)
+                for (i in 1 until drawPoints.size) {
+                    cubicTo(
+                        x1 = controlPoint1[i - 1].x,
+                        y1 = controlPoint1[i - 1].y,
+                        x2 = controlPoint2[i-1].x,
+                        y2 = controlPoint2[i-1].y,
+                        x3 = drawPoints[i].x,
+                        y3 = drawPoints[i].y
+                    )
+
+                }
+            }
+        }
+
+        drawPath(linePath,color = style.chartLineColor, style = Stroke(width = 2f, cap = StrokeCap.Round))
+
+        drawPoints.forEachIndexed { index, dataPoint ->
+            if (isShowingDataPoints) {
+                val circleOffset = Offset(dataPoint.x, dataPoint.y)
+                drawCircle(color = style.selectedColor, radius = 10f, center = circleOffset)
+                if (selectedDataPointIndex == index) {
+                    drawCircle(color = Color.White, radius = 15f, center = circleOffset)
+                    drawCircle(
+                        color = style.selectedColor,
+                        radius = 15f,
+                        center = circleOffset,
+                        style = Stroke(width = 5f)
+                    )
+                }
             }
         }
     }
