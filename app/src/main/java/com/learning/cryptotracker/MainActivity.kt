@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.learning.cryptotracker.core.navigation.AdaptiveCoinListDetailPane
 import com.learning.cryptotracker.core.presentation.util.ObserveAsEvents
 import com.learning.cryptotracker.core.presentation.util.toString
 import com.learning.cryptotracker.crypto.presentation.coin_detail.CoinDetailScreen
@@ -33,26 +34,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             CryptoTrackerTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    val viewModel = koinViewModel<CoinListViewModel>()
-                    val state by viewModel.state.collectAsStateWithLifecycle()
-                    val context = LocalContext.current
-                    val lifecycleOwner = LocalLifecycleOwner.current
-                    ObserveAsEvents(events = viewModel.events, key1 = lifecycleOwner.lifecycle){
-                        when(it){
-                            is CoinListEvent.Error -> {
-                                Toast.makeText(context,it.error.toString(context), Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    }
-                    when {
-                        state.selectedCoin != null -> {
-                            CoinDetailScreen(state = state, modifier = Modifier.padding(innerPadding))
-                        }
-
-                        else -> {
-                            CoinListScreen(state = state, modifier = Modifier.padding(innerPadding), onAction = viewModel::onAction)
-                        }
-                    }
+                    AdaptiveCoinListDetailPane(modifier = Modifier.padding(innerPadding))
                 }
             }
         }
