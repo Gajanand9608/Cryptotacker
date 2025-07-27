@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +7,12 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
+}
+val myApiKey = localProperties.getProperty("COINCAP_API_KEY")
 android {
     namespace = "com.learning.cryptotracker"
     compileSdk = 34
@@ -24,7 +32,8 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String","BASE_URL","\"https://api.coincap.io/v2/\"")
+            buildConfigField("String","BASE_URL","\"https://rest.coincap.io/v3/\"")
+            buildConfigField("String", "API_KEY", "\"$myApiKey\"")
         }
         release {
             isMinifyEnabled = false
@@ -33,7 +42,8 @@ android {
                 "proguard-rules.pro"
             )
 
-            buildConfigField("String","BASE_URL","\"https://api.coincap.io/v2/\"")
+            buildConfigField("String","BASE_URL","\"https://rest.coincap.io/v3/\"")
+            buildConfigField("String", "API_KEY", "\"$myApiKey\"")
         }
     }
     compileOptions {
