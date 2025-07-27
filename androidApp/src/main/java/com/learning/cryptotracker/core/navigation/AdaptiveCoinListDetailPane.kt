@@ -9,6 +9,7 @@ import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneSca
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -20,6 +21,7 @@ import com.learning.cryptotracker.crypto.presentation.coin_list.CoinListAction
 import com.learning.cryptotracker.crypto.presentation.coin_list.CoinListEvent
 import com.learning.cryptotracker.crypto.presentation.coin_list.CoinListScreen
 import com.learning.cryptotracker.crypto.presentation.coin_list.CoinListViewModel
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
@@ -28,6 +30,7 @@ fun AdaptiveCoinListDetailPane(modifier : Modifier = Modifier, viewModel: CoinLi
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val scope = rememberCoroutineScope()
     ObserveAsEvents(events = viewModel.events, key1 = lifecycleOwner.lifecycle){
         when(it){
             is CoinListEvent.Error -> {
@@ -43,10 +46,11 @@ fun AdaptiveCoinListDetailPane(modifier : Modifier = Modifier, viewModel: CoinLi
                 viewModel.onAction(action)
                 when(action){
                     is CoinListAction.OnCoinClick -> {
-                        navigator.navigateTo(pane = ListDetailPaneScaffoldRole.Detail)
+                        scope.launch {
+                            navigator.navigateTo(pane = ListDetailPaneScaffoldRole.Detail)
+                        }
                     }
                 }
-
             } )
         }
     }, detailPane ={

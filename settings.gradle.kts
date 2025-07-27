@@ -20,5 +20,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "CryptoTracker"
-include(":app")
+include(":androidApp")
  
